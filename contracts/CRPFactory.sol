@@ -25,16 +25,6 @@ import "./ConfigurableRightsPool.sol";
  *      5: canChangeCap - can change the BSP cap (max # of pool tokens)
  */
 contract CRPFactory {
-    // State variables
-
-    // Keep a list of all Configurable Rights Pools
-    mapping(address=>bool) private _isCrp;
-
-    // Event declarations
-
-
-    // Function declarations
-
     /**
      * @notice Create a new CRP
      * @dev emits a LogNewCRP event
@@ -67,6 +57,4 @@ contract CRPFactory {
 
         return crp;
     }
-
-
 }
