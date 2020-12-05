@@ -16,7 +16,8 @@ import "./utils/BalancerOwnable.sol";
 // Libraries
 import { RightsManager } from "../libraries/RightsManager.sol";
 import "../libraries/SmartPoolManager.sol";
-import "../libraries/SafeApprove.sol";
+// import "../libraries/SafeApprove.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 // Contracts
 
@@ -40,7 +41,7 @@ import "../libraries/SafeApprove.sol";
  */
 contract ConfigurableRightsPool is PCToken, BalancerOwnable, BalancerReentrancyGuard {
     using BalancerSafeMath for uint;
-    using SafeApprove for IERC20;
+    using SafeERC20 for IERC20;
 
     // Type declarations
 
@@ -188,19 +189,20 @@ contract ConfigurableRightsPool is PCToken, BalancerOwnable, BalancerReentrancyG
         public
         PCToken(poolParams.poolTokenSymbol, poolParams.poolTokenName)
     {
-        // We don't have a pool yet; check now or it will fail later (in order of likelihood to fail)
-        // (and be unrecoverable if they don't have permission set to change it)
-        // Most likely to fail, so check first
-        require(poolParams.swapFee >= BalancerConstants.MIN_FEE, "ERR_INVALID_SWAP_FEE");
-        require(poolParams.swapFee <= BalancerConstants.MAX_FEE, "ERR_INVALID_SWAP_FEE");
+        // We'll do the checks before calling the constructor in Migrator
+        // // We don't have a pool yet; check now or it will fail later (in order of likelihood to fail)
+        // // (and be unrecoverable if they don't have permission set to change it)
+        // // Most likely to fail, so check first
+        // require(poolParams.swapFee >= BalancerConstants.MIN_FEE, "ERR_INVALID_SWAP_FEE");
+        // require(poolParams.swapFee <= BalancerConstants.MAX_FEE, "ERR_INVALID_SWAP_FEE");
 
-        // Arrays must be parallel
-        require(poolParams.tokenBalances.length == poolParams.constituentTokens.length, "ERR_START_BALANCES_MISMATCH");
-        require(poolParams.tokenWeights.length == poolParams.constituentTokens.length, "ERR_START_WEIGHTS_MISMATCH");
-        // Cannot have too many or too few - technically redundant, since BPool.bind() would fail later
-        // But if we don't check now, we could have a useless contract with no way to create a pool
+        // // Arrays must be parallel
+        // require(poolParams.tokenBalances.length == poolParams.constituentTokens.length, "ERR_START_BALANCES_MISMATCH");
+        // require(poolParams.tokenWeights.length == poolParams.constituentTokens.length, "ERR_START_WEIGHTS_MISMATCH");
+        // // Cannot have too many or too few - technically redundant, since BPool.bind() would fail later
+        // // But if we don't check now, we could have a useless contract with no way to create a pool
 
-        require(poolParams.constituentTokens.length >= BalancerConstants.MIN_ASSET_LIMIT, "ERR_TOO_FEW_TOKENS");
+        // require(poolParams.constituentTokens.length >= BalancerConstants.MIN_ASSET_LIMIT, "ERR_TOO_FEW_TOKENS");
         // No bound on max tokens in Alpaca
         // Governance determines how many and which tokens are included
         // require(poolParams.constituentTokens.length <= BalancerConstants.MAX_ASSET_LIMIT, "ERR_TOO_MANY_TOKENS");
@@ -947,11 +949,15 @@ contract ConfigurableRightsPool is PCToken, BalancerOwnable, BalancerReentrancyG
             uint bal = _initialBalances[i];
             uint denorm = gradualUpdate.startWeights[i];
 
-            bool returnValue = IERC20(t).transferFrom(msg.sender, address(this), bal);
-            require(returnValue, "ERR_ERC20_FALSE");
+            IERC20(t).safeTransferFrom(msg.sender, address(this), bal);
+            // bool returnValue = IERC20(t).transferFrom(msg.sender, address(this), bal);
+            // require(returnValue, "ERR_ERC20_FALSE");
 
-            returnValue = IERC20(t).safeApprove(address(bPool), BalancerConstants.MAX_UINT);
-            require(returnValue, "ERR_ERC20_FALSE");
+            // Note: we trust BPool, so the approve() attack is not an issue here
+            IERC20(t).safeApprove(address(bPool), BalancerConstants.MAX_UINT);
+            // SafeApprove.safeApprove(IERC20(t), address(bPool), BalancerConstants.MAX_UINT);
+            // returnValue = IERC20(t).safeApprove(address(bPool), BalancerConstants.MAX_UINT);
+            // require(returnValue, "ERR_ERC20_FALSE");
 
             bPool.bind(t, bal, denorm);
         }
@@ -980,8 +986,9 @@ contract ConfigurableRightsPool is PCToken, BalancerOwnable, BalancerReentrancyG
         uint tokenBalance = bPool.getBalance(erc20);
         uint tokenWeight = bPool.getDenormalizedWeight(erc20);
 
-        bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
-        require(xfer, "ERR_ERC20_FALSE");
+        IERC20(erc20).safeTransferFrom(from, address(this), amount);
+        // bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
+        // require(xfer, "ERR_ERC20_FALSE");
         bPool.rebind(erc20, BalancerSafeMath.badd(tokenBalance, amount), tokenWeight);
     }
 
@@ -993,8 +1000,9 @@ contract ConfigurableRightsPool is PCToken, BalancerOwnable, BalancerReentrancyG
         uint tokenWeight = bPool.getDenormalizedWeight(erc20);
         bPool.rebind(erc20, BalancerSafeMath.bsub(tokenBalance, amount), tokenWeight);
 
-        bool xfer = IERC20(erc20).transfer(to, amount);
-        require(xfer, "ERR_ERC20_FALSE");
+        IERC20(erc20).safeTransfer(to, amount);
+        // bool xfer = IERC20(erc20).transfer(to, amount);
+        // require(xfer, "ERR_ERC20_FALSE");
     }
 
 
