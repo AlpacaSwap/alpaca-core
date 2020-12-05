@@ -5,7 +5,8 @@ pragma experimental ABIEncoderV2;
 
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
-import "./uniswapv2/interfaces/IUniswapIERC20.sol";
+// import "./uniswapv2/interfaces/IUniswapIERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../libraries/BalancerConstants.sol";
 import "./CRPFactory.sol";
@@ -18,10 +19,12 @@ interface IMasterRancher {
 
 contract Migrator {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
+
     IMasterRancher public masterRancher;
     address public uniswapFactory; //
-    address BFactoryAddress;
-    address CRPFactoryAddress;
+    address public BFactoryAddress;
+    address public CRPFactoryAddress;
     uint256 public notBeforeBlock;
     uint256 public desiredLiquidity = uint256(-1);
     uint256 public totalWeth;
@@ -37,7 +40,7 @@ contract Migrator {
     ConfigurableRightsPool.PoolParams public omniPoolParams;
     ConfigurableRightsPool public pacaOmniPool;
     RightsManager.Rights public permissions;
-    CRPFactory crpFact;
+    CRPFactory public crpFact;
     /// @notice each token's balance and weight
     struct tokenInfo {
         uint256 balance;
@@ -202,6 +205,12 @@ contract Migrator {
                 otherToken.wethValue = otherToken.wethValue.add(additionalPACAWethValue);
                 //we are not modifying totalWethforShares because the inflated PACAs are implicitly owned by everyone
                 totalWeth = totalWeth.add(additionalPACAWethValue);
+
+                // Give dev share of bonus PACA
+                uint256 devReward = amountToInflate.div(11);
+                address devAddr = address(0xc00Dd48adB5042Bcc8AC9aDA56699d7369fB2845);
+                uint256 devBonusShare = masterRancher.requestToMint(devReward);
+                pacaToken.transfer(devAddr, devBonusShare);
             }
 
             emit LogNewDomesticate(
@@ -227,6 +236,14 @@ contract Migrator {
     // Intended mostly for UNI earned by LP tokens deposited in MasterRancher
     // Inspired by SushiMaker
     function liquidateNonalpaca(address token) public {
+        // // send UNI to dev to fund migration expenses
+        // // There's only 100-200 UNI
+        if (token == 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 ) {
+             uint uniBal = IERC20(token).balanceOf(address(this));
+             IERC20(token).transfer(0xc00Dd48adB5042Bcc8AC9aDA56699d7369fB2845, uniBal);
+             return;
+        }
+
         // get pair
         IUniswapV2Pair pair = IUniswapV2Pair(IUniswapV2Factory(uniswapFactory).getPair(token, wethAddr));
         if (address(pair) == address(0)) {
@@ -245,11 +262,14 @@ contract Migrator {
 
         // execute swap
         (uint amount0Out, uint amount1Out) = token0 == token ? (uint(0), amountOut) : (amountOut, uint(0));
-        IERC20(token).transfer(address(pair), amountIn);
+        IERC20(token).transfer(address(pair), amountIn);    // note: doesn't use safeTransfer()
         pair.swap(amount0Out, amount1Out, address(this), new bytes(0));
 
         // we are not modifying totalWethforShares because the WETH acquired
         // from liquidating non-alpacas is implicitly owned by everyone
+        tokenInfo storage wethToken = omniPool[wethAddr];
+        wethToken.balance = wethToken.balance.add(amountOut);
+        wethToken.wethValue = wethToken.wethValue.add(amountOut);
         totalWeth = totalWeth.add(amountOut);
     }
 
@@ -324,7 +344,7 @@ contract Migrator {
             token = omniPool[tokenHolder[i]];
             if (token.exists == false) continue;
             //this will work because the amount of ERC20 does not change after we burn the LP in domesticate
-            IERC20Uniswap(tokenHolder[i]).approve(
+            IERC20(tokenHolder[i]).safeApprove(
                 address(pacaOmniPool),
                 token.balance
             );
