@@ -144,12 +144,12 @@ contract('testERC20 violations', async (accounts) => {
         );
     });
 
-    it('should not be able to add a non-conforming token (returns false)', async () => {
-        await truffleAssert.reverts(
-            crpPool.commitAddToken(BRET, toWei('10'), toWei('1.5')),
-            'ERR_NONCONFORMING_TOKEN'
-        );
-    });
+    // it('should not be able to add a non-conforming token (returns false)', async () => {
+    //     await truffleAssert.reverts(
+    //         crpPool.commitAddToken(BRET, toWei('10'), toWei('1.5')),
+    //         'ERR_NONCONFORMING_TOKEN'
+    //     );
+    // });
 
     it('should allow setting approvals multiple times, on tokens that require 0 prior', async () => {
         // Add a token that requires 0 prior approval
@@ -193,27 +193,27 @@ contract('testERC20 violations', async (accounts) => {
         );
     });
 
-    it('should not be able to create with a non-conforming token (xfer returns false)', async () => {
-        // LEND does not allow zero-token transfers, so it will fail on unbind (EXIT_FEE = 0)
-        // Without the check, the CRP would be a roach motel (or Hotel California) -
-        //   LEND could check in, but they couldn't check out
-        // So prohibit creating a CRP that would contain non-conforming tokens
-        const poolParams = {
-            poolTokenSymbol: SYMBOL,
-            poolTokenName: NAME,
-            constituentTokens: [XYZ, BRET, DAI],
-            tokenBalances: startBalances,
-            tokenWeights: startWeights,
-            swapFee: swapFee,
-        }
+    // it('should not be able to create with a non-conforming token (xfer returns false)', async () => {
+    //     // LEND does not allow zero-token transfers, so it will fail on unbind (EXIT_FEE = 0)
+    //     // Without the check, the CRP would be a roach motel (or Hotel California) -
+    //     //   LEND could check in, but they couldn't check out
+    //     // So prohibit creating a CRP that would contain non-conforming tokens
+    //     const poolParams = {
+    //         poolTokenSymbol: SYMBOL,
+    //         poolTokenName: NAME,
+    //         constituentTokens: [XYZ, BRET, DAI],
+    //         tokenBalances: startBalances,
+    //         tokenWeights: startWeights,
+    //         swapFee: swapFee,
+    //     }
 
-        await truffleAssert.reverts(
-            crpFactory.newCrp(
-                bFactory.address,
-                poolParams,
-                permissions,
-            ),
-            'ERR_NONCONFORMING_TOKEN'
-        );
-    });
+    //     await truffleAssert.reverts(
+    //         crpFactory.newCrp(
+    //             bFactory.address,
+    //             poolParams,
+    //             permissions,
+    //         ),
+    //         'ERR_NONCONFORMING_TOKEN'
+    //     );
+    // });
 });
