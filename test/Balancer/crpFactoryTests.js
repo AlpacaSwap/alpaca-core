@@ -177,49 +177,49 @@ contract('CRPFactory', async (accounts) => {
         );
     });
 
-    it('should not be able to create with zero fee', async () => {
-        const poolParams = {
-            poolTokenSymbol: LONG_SYMBOL,
-            poolTokenName: NAME,
-            constituentTokens: [XYZ, WETH, DAI],
-            tokenBalances: startBalances,
-            tokenWeights: startWeights,
-            swapFee: 0,
-        }
+    // it('should not be able to create with zero fee', async () => {
+    //     const poolParams = {
+    //         poolTokenSymbol: LONG_SYMBOL,
+    //         poolTokenName: NAME,
+    //         constituentTokens: [XYZ, WETH, DAI],
+    //         tokenBalances: startBalances,
+    //         tokenWeights: startWeights,
+    //         swapFee: 0,
+    //     }
 
-        await truffleAssert.reverts(
-            crpFactory.newCrp(
-                bFactory.address,
-                poolParams,
-                permissions,
-            ),
-            'ERR_INVALID_SWAP_FEE'
-        );
-    });
+    //     await truffleAssert.reverts(
+    //         crpFactory.newCrp(
+    //             bFactory.address,
+    //             poolParams,
+    //             permissions,
+    //         ),
+    //         'ERR_INVALID_SWAP_FEE'
+    //     );
+    // });
 
-    it('should not be able to create with a fee above the MAX', async () => {
-        // Max is 10**18 / 10
-        // Have to pass it as a string for some reason...
-        const invalidSwapFee = '200000000000000000';
+    // it('should not be able to create with a fee above the MAX', async () => {
+    //     // Max is 10**18 / 10
+    //     // Have to pass it as a string for some reason...
+    //     const invalidSwapFee = '200000000000000000';
 
-        const poolParams = {
-            poolTokenSymbol: SYMBOL,
-            poolTokenName: NAME,
-            constituentTokens: [XYZ, WETH, DAI],
-            tokenBalances: startBalances,
-            tokenWeights: startWeights,
-            swapFee: invalidSwapFee,
-        }
+    //     const poolParams = {
+    //         poolTokenSymbol: SYMBOL,
+    //         poolTokenName: NAME,
+    //         constituentTokens: [XYZ, WETH, DAI],
+    //         tokenBalances: startBalances,
+    //         tokenWeights: startWeights,
+    //         swapFee: invalidSwapFee,
+    //     }
 
-        await truffleAssert.reverts(
-            crpFactory.newCrp(
-                bFactory.address,
-                poolParams,
-                permissions,
-            ),
-            'ERR_INVALID_SWAP_FEE'
-        );
-    });
+    //     await truffleAssert.reverts(
+    //         crpFactory.newCrp(
+    //             bFactory.address,
+    //             poolParams,
+    //             permissions,
+    //         ),
+    //         'ERR_INVALID_SWAP_FEE'
+    //     );
+    // });
 
     it('should not be able to create with a single token', async () => {
         // Max is 10**18 / 10
