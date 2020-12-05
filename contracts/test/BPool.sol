@@ -3,6 +3,7 @@ pragma solidity ^0.6.6;
 
 import "./BToken.sol";
 import "./BMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 // Core contract; can't be changed. So disable solhint (reminder for v2)
 
@@ -10,6 +11,7 @@ import "./BMath.sol";
 /* solhint-disable event-name-camelcase */
 
 contract BPool is BBronze, BToken, BMath {
+    using SafeERC20 for IERC20;
 
     struct Record {
         bool bound;   // is token bound to pool
@@ -931,15 +933,17 @@ contract BPool is BBronze, BToken, BMath {
     function _pullUnderlying(address erc20, address from, uint amount)
         internal
     {
-        bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
-        require(xfer, "ERR_ERC20_FALSE");
+        IERC20(erc20).safeTransferFrom(from, address(this), amount);
+        // bool xfer = IERC20(erc20).transferFrom(from, address(this), amount);
+        // require(xfer, "ERR_ERC20_FALSE");
     }
 
     function _pushUnderlying(address erc20, address to, uint amount)
         internal
     {
-        bool xfer = IERC20(erc20).transfer(to, amount);
-        require(xfer, "ERR_ERC20_FALSE");
+        IERC20(erc20).safeTransfer(to, amount);
+        // bool xfer = IERC20(erc20).transfer(to, amount);
+        // require(xfer, "ERR_ERC20_FALSE");
     }
 
     function _pullPoolShare(address from, uint amount)
