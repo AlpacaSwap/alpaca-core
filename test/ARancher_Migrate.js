@@ -333,6 +333,8 @@ contract("RancherMigrate", ([alice, bob, carol, dev, minter]) => {
       function round(x, ndigits) {
         return Math.round(x * 10**ndigits) / 10**ndigits;
       }
+
+      this.wethFromUni = migratorWETH1Diff;
       
       // Change in tracked total WETH matches actual change
       assert.equal(round(migratorWETH1Diff, 10), round(migratorTotalWethDiff, 10));
@@ -371,14 +373,14 @@ contract("RancherMigrate", ([alice, bob, carol, dev, minter]) => {
       console.log("paca denorm: ", fromWei(await Bpool.getDenormalizedWeight(this.paca.address)));
 
       //verify the balances are correct - should be the original deposit amount except for PACA (INFLATED!)
-      assert.equal(Math.round(parseFloat(fromWei(await Bpool.getBalance(this.weth.address)))), 3100);
+      assert.equal(Math.round(parseFloat(fromWei(await Bpool.getBalance(this.weth.address)))), Math.round(parseFloat(3100 + this.wethFromUni)));
       assert.equal(Math.round(parseFloat(fromWei(await Bpool.getBalance(this.token1.address)))), 1000);
       assert.equal(Math.round(parseFloat(fromWei(await Bpool.getBalance(this.token2.address)))), 1000);
       assert.equal(Math.round(parseFloat(fromWei(await Bpool.getBalance(this.token3.address)))), 4000);
       assert.equal(Math.round(parseFloat(fromWei(await Bpool.getBalance(this.paca.address)))), 62000);
 
       //verify the weights are correct total should be 1000
-      assert.equal(Math.round(parseFloat(fromWei(await Bpool.getDenormalizedWeight(this.weth.address)))), 461);
+      assert.equal(Math.round(parseFloat(fromWei(await Bpool.getDenormalizedWeight(this.weth.address)))), 462);
       assert.equal(Math.round(parseFloat(fromWei(await Bpool.getDenormalizedWeight(this.token1.address)))), 149);
       assert.equal(Math.round(parseFloat(fromWei(await Bpool.getDenormalizedWeight(this.token2.address)))), 149);
       assert.equal(Math.round(parseFloat(fromWei(await Bpool.getDenormalizedWeight(this.token3.address)))), 149);
